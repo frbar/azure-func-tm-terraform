@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -7,17 +5,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Frbar.DemoFunction
 {
-    public class Ping
+    public class HelloWorld
     {
         private readonly ILogger _logger;
 
-        public Ping(ILoggerFactory loggerFactory)
+        public HelloWorld(ILoggerFactory loggerFactory)
         {
-            _logger = loggerFactory.CreateLogger<Ping>();
+            _logger = loggerFactory.CreateLogger<HelloWorld>();
         }
 
-        [Function("ping")]
-        public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req)
+        [Function("hello-world")]
+        public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 

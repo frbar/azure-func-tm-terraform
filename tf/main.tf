@@ -8,10 +8,19 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "3.32.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "3.28.0"
+    }
   }
 
 }
 
 provider "azurerm" {
   features {}
+}
+
+provider "cloudflare" {
+  #api_key = "via env var"
+  #email   = "via env var"
 }

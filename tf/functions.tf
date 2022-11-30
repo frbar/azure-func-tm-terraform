@@ -18,7 +18,7 @@ resource "azurerm_storage_account" "poc" {
   count                    = 2
   name                     = "${var.env_name}func${count.index}"
   resource_group_name      = azurerm_resource_group.poc.name
-  location                 = azurerm_resource_group.poc.location
+  location                 = local.locations[count.index]
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
@@ -27,7 +27,7 @@ resource "azurerm_service_plan" "poc" {
   count               = 2
   name                = "${var.env_name}-plan-${count.index}"
   resource_group_name = azurerm_resource_group.poc.name
-  location            = azurerm_resource_group.poc.location
+  location            = local.locations[count.index]
   os_type             = "Windows"
   sku_name            = "Y1"
 }
@@ -36,7 +36,7 @@ resource "azurerm_windows_function_app" "poc" {
   count               = 2
   name                = "${var.env_name}-func-${count.index}"
   resource_group_name = azurerm_resource_group.poc.name
-  location            = azurerm_resource_group.poc.location
+  location            = azurerm_service_plan.poc[count.index].location
 
   storage_account_name       = azurerm_storage_account.poc[count.index].name
   storage_account_access_key = azurerm_storage_account.poc[count.index].primary_access_key
@@ -54,10 +54,43 @@ resource "azurerm_windows_function_app" "poc" {
     "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.poc.instrumentation_key,
     "FUNCTIONS_EXTENSION_VERSION"    = "~4"
   }
+}
 
-  # lifecycle {
-  #   ignore_changes = [
-  #     app_settings["WEBSITE_RUN_FROM_PACKAGE"]
-  #   ]
-  # }
+resource "random_password" "function_key" {
+  length           = 32
+  special          = false
+
+  keepers = {
+    rotation = var.key_rotation_iteration
+  }
+}
+
+resource "null_resource" "poc_func_0" {
+  
+  depends_on = [
+    azurerm_windows_function_app.poc[0]
+  ]
+
+  triggers = {
+    rotation = var.key_rotation_iteration
+  }
+  
+  provisioner "local-exec" {
+    command = "az functionapp keys set -g ${azurerm_windows_function_app.poc[0].resource_group_name} -n ${azurerm_windows_function_app.poc[0].name} --key-type functionKeys --key-name cloudflare_key --key-value ${random_password.function_key.result}"
+  }
+}
+
+resource "null_resource" "poc_func_1" {
+  
+  depends_on = [
+    azurerm_windows_function_app.poc[1]
+  ]
+
+  triggers = {
+    rotation = var.key_rotation_iteration
+  }
+  
+  provisioner "local-exec" {
+    command = "az functionapp keys set -g ${azurerm_windows_function_app.poc[1].resource_group_name} -n ${azurerm_windows_function_app.poc[1].name} --key-type functionKeys --key-name cloudflare_key --key-value ${random_password.function_key.result}"
+  }
 }
